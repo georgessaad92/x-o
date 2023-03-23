@@ -1,0 +1,148 @@
+import random
+
+
+class OutOfRange(IndexError):
+    """Exception raised for errors in the input position.
+    Attributes:
+        expression -- input expression in which the error occurred
+        message -- explanation of the error
+    """
+
+    def __init__(self, expression, message):
+        self.expression = expression
+        self.message = message
+
+
+class deck:
+    player_x = 'X'
+    player_o = 'O'
+    turn = player_o
+
+    def __init__(self):
+        self.deck_lst = list(' ' * 9)
+        self.deck_arr = [[0, 0, 0], \
+                         [0, 0, 0], \
+                         [0, 0, 0]]
+
+    def show_deck(self):
+        print(f" {self.deck_lst[0]} | {self.deck_lst[1]} | {self.deck_lst[2]} \n-----------" \
+              f"\n {self.deck_lst[3]} | {self.deck_lst[4]} | {self.deck_lst[5]} \n-----------" \
+              f"\n {self.deck_lst[6]} | {self.deck_lst[7]} | {self.deck_lst[8]} ")
+
+    def play(player):
+        """Get a playing position on the deck from the player.
+        Attributes:
+            player -- either X or O
+        """
+        while True:
+            try:
+                position = int(input(f'Player {player} turn\n'))  # from 1 - 9
+                if position not in range(1, 10):
+                    raise OutOfRange(position, "Please Choose a number in the range 1:9")
+            except ValueError:
+                print('Bad entry.\nPlease enter a numeric position from 1 to 9')
+            except OutOfRange as oor:
+                print(f'Bad entry.\n{repr(oor)}')
+            else:
+                break
+        return position
+
+    def end_of_game(self, player):
+        """Check for a winning case.
+        Attributes:
+            player -- to be announced as the winner if the condition is met
+
+        return True if one has won, else return False for no winning case is found
+        """
+        row_ln = 0  # counter for row line shape of winning
+        col_ln = 0  # counter for column line shape of winning
+        p_dgnl = 0  # counter for positive diagonal shape of winning
+        n_dgnl = 0  # counter for negative diagonal shape of winning
+
+        for i in range(3):  # loop on rows
+            row_smpl = self.deck_arr[i][0]  # sample value for the i row start
+            col_smpl = self.deck_arr[0][i]  # sample value for the i column start
+            dgl_smpl = self.deck_arr[0][0]  # sample value for the diagonal start
+            for j in range(3):  # loop on columns
+                if self.deck_arr[i][j] == row_smpl and self.deck_arr[i][j] != 0:  # check on a complete similar row
+                    row_ln += 1
+                else:
+                    row_ln = 0
+                if self.deck_arr[j][i] == col_smpl and self.deck_arr[j][i] != 0:  # check on a complete similar column
+                    col_ln += 1
+                else:
+                    col_ln = 0
+                # check on a complete similar positive diagonal
+                if self.deck_arr[j][j] == dgl_smpl and self.deck_arr[j][j] != 0:
+                    p_dgnl += 1
+                else:
+                    p_dgnl = 0
+
+            if row_ln == 3 or col_ln == 3 or p_dgnl == 3:
+                print(f'Congratulations, Player {player} is the winner')
+                return True
+
+        n_dgl_smpl = self.deck_arr[0][2]  # sample value from the negative diagonal start
+        for k in range(2, -1, -1):  # loop explicitly on the negative diagonal values
+            if self.deck_arr[2 - k][k] == n_dgl_smpl and self.deck_arr[2 - k][k] != 0:
+                n_dgnl += 1
+            else:
+                n_dgnl = 0
+
+        if n_dgnl == 3:
+            print(f'Congratulations, Player {player} is the winner')
+            return True
+
+        return False
+
+
+def get_mode():
+    print("Please select a mode:\n1) 2 players\n2) A player with computer")
+    while True:
+        try:
+            mode = int(input('Mode: '))
+            if mode not in range(1, 3):
+                raise OutOfRange(mode, "Please Choose a number representing mode in the range 1:2")
+        except ValueError:
+            print('Bad entry.\nPlease enter a numeric position from 1 to 2')
+        except OutOfRange as oor:
+            print(f'Bad entry.\n{repr(oor)}')
+        else:
+            break
+    return mode
+
+
+# Main
+
+game = deck()  # start a new game
+mode = get_mode()
+
+while True:
+    game.turn = deck.player_o if game.turn == deck.player_x else deck.player_x  # toggle turns
+
+    if mode == 2 and game.turn == 'O':  # computer plays
+        # choose a random position from available spots on deck
+        position = random.choice([x[0] + 1 for x in enumerate(game.deck_lst) if x[1] == ' '])
+        print('\n')  # additional space between each play for convenient display
+    else:
+        while True:
+            position = deck.play(game.turn)
+            if game.deck_lst[position - 1] != ' ':
+                print('This spot is used. Please choose another position')
+            else:
+                break
+
+    game.deck_lst[position - 1] = game.turn  # write the related player sign on deck
+    game.show_deck()
+
+    # update the deck array attribute for the game to then analyze a winning possibility
+    row = (position - 1) // 3
+    col = position - (3 * row) - 1
+    game.deck_arr[row][col] = game.turn
+
+    if game.end_of_game(game.turn):
+        break
+
+    if ' ' not in game.deck_lst:
+        print('End of Game')
+        break
